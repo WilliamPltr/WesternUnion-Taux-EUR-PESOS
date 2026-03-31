@@ -14,7 +14,7 @@ Application [Next.js](https://nextjs.org) qui interroge le routeur GraphQL publi
 
 - `GET /api/check-rate` — réponse JSON : `rate`, `threshold`, `alerted`, `sendAmountEur`, `checkedAt`.
 
-Si `CRON_SECRET` est défini, l’en-tête `Authorization: Bearer <CRON_SECRET>` est obligatoire (utilisé par [Vercel Cron](https://vercel.com/docs/cron-jobs) lorsque la variable est configurée sur le projet).
+Si `CRON_SECRET` est défini, l’en-tête `Authorization: Bearer <CRON_SECRET>` est obligatoire (pour les appels planifiés, ex. [GitHub Actions](https://docs.github.com/en/actions), ou les tests manuels).
 
 ## Variables d’environnement
 
@@ -37,9 +37,7 @@ Créer un compte Resend, vérifier votre domaine d’envoi (ou utiliser le domai
 ## Déploiement Vercel
 
 1. Importer le dépôt dans [Vercel](https://vercel.com) et définir les variables d’environnement (production).
-2. Définir `CRON_SECRET` : Vercel enverra automatiquement `Authorization: Bearer` vers le chemin du cron.
-3. Le fichier [`vercel.json`](vercel.json) planifie `GET /api/check-rate` toutes les 6 heures (UTC). Modifier `schedule` si besoin (syntaxe cron à 5 champs).
-4. Les crons ne s’exécutent qu’en **déploiement production**.
+2. Planifier les appels à `GET /api/check-rate` depuis **GitHub Actions** (ou un autre orchestrateur) avec l’en-tête `Authorization: Bearer` et la valeur de `CRON_SECRET` stockée en secret du dépôt.
 
 Test manuel après déploiement :
 
