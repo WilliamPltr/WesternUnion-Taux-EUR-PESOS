@@ -1,0 +1,47 @@
+# Appelle l’API déployée sur Vercel toutes les 5 minutes.
+# L’e-mail (si taux > seuil) est envoyé par l’API via Resend — ce workflow ne fait qu’un GET authentifié.
+
+name: Western Union EUR/ARS check
+
+on:
+  schedule:
+    # Toutes les 5 minutes (heure UTC). GitHub peut décaler légèrement l’exécution.
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wu-rate-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: GET /api/check-rate
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          CHECK_RATE_URL: ${{ vars.CHECK_RATE_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CHECK_RATE_URL:-}" ]; then
+            echo "::error::Ajoute la variable CHECK_RATE_URL (Settings → Secrets and variables → Actions → Variables)"
+            exit 1
+          fi
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::Ajoute le secret CRON_SECRET (identique à celui de Vercel)"
+            exit 1
+          fi
+          BASE="${CHECK_RATE_URL%/}"
+          echo "Requête vers ${BASE}/api/check-rate"
+          HTTP_CODE=$(curl -sS -o resp.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${BASE}/api/check-rate")
+          echo "HTTP ${HTTP_CODE}"
+          cat resp.json
+          echo ""
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            exit 1
+          fi

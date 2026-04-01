@@ -10,7 +10,7 @@ Lien HTML (à coller sur une page web) :
 
 Application [Next.js](https://nextjs.org) qui interroge le routeur GraphQL public de [Western Union](https://www.westernunion.com/es/es/currency-converter/eur-to-ars-rate.html) (corridor par défaut : Espagne → Argentine), compare le taux à un seuil et envoie un e-mail via [Resend](https://resend.com) si le taux le dépasse.
 
-## Seuil EUR/ARS (le « trésor » à ajuster)
+## Seuil EUR/ARS à ajuster
 
 Le seuil **n’est pas** dans `.env` : il est dans **[`lib/eur-ars-threshold.ts`](lib/eur-ars-threshold.ts)** (`EUR_ARS_THRESHOLD`, en ARS pour 1 EUR).
 
@@ -42,11 +42,30 @@ Si `CRON_SECRET` est défini, l’en-tête `Authorization: Bearer <CRON_SECRET>`
 
 Importer le dépôt et définir **uniquement** les variables secrètes (Resend, `CRON_SECRET`). **Pas** de `EUR_ARS_THRESHOLD` dans Vercel.
 
-**GitHub Actions** : secret `CRON_SECRET` pour le `curl` ; le seuil vient du code déployé.
-
 ```bash
 curl -sS -H "Authorization: Bearer $CRON_SECRET" "https://<votre-domaine>/api/check-rate"
 ```
+
+## Vérification toutes les 5 minutes (GitHub Actions → Vercel)
+
+Le workflow [`.github/workflows/wu-eur-ars-check.yml`](.github/workflows/wu-eur-ars-check.yml) fait un **GET** sur ton API Vercel **toutes les 5 minutes**. Ce n’est pas Vercel qui planifie : c’est **GitHub** qui déclenche le job ; l’API sur Vercel interroge Western Union et envoie l’e-mail via Resend si `rate > seuil` (seuil = [`lib/eur-ars-threshold.ts`](lib/eur-ars-threshold.ts)).
+
+### À faire une fois
+
+1. **Vercel** — Projet lié à ce dépôt, déploiement OK. Dans *Settings → Environment Variables* (Production), définir au minimum : `CRON_SECRET`, `RESEND_API_KEY`, `RESEND_FROM`, `ALERT_EMAIL` (mêmes idées que ton `.env.local`). Repère l’URL du site, ex. `https://ton-projet.vercel.app` ou ton domaine custom.
+
+2. **GitHub** — Ouvre le dépôt → *Settings → Secrets and variables → Actions* :
+   - **Secret** `CRON_SECRET` : **exactement la même valeur** que sur Vercel (sinon `401`).
+   - **Variable** `CHECK_RATE_URL` : l’URL de base **sans** `/api/...`, ex. `https://ton-projet.vercel.app` (pas de `/` final obligatoire).
+
+3. **Activer Actions** — Onglet *Actions* : si besoin, accepter les workflows pour ce dépôt. Le premier run peut être lancé à la main : *Actions → Western Union EUR/ARS check → Run workflow*.
+
+### Limites utiles à connaître
+
+- Les **crons GitHub** sont en **UTC** ; « toutes les 5 minutes » est le minimum courant pour `schedule`.
+- GitHub peut **retarder** un peu les exécutions en période de forte charge.
+- Sur dépôt **privé**, les minutes Actions sont comptées dans ton quota ([documentation](https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions)) ; sur dépôt **public**, c’est généralement gratuit dans une limite raisonnable.
+- Vercel **Hobby** limite les *Vercel Cron* (si tu les utilisais) — ici on n’utilise pas les crons Vercel, seulement GitHub.
 
 ## Développement local
 
