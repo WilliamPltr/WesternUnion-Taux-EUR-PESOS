@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { EUR_ARS_THRESHOLD } from "@/lib/eur-ars-threshold";
 import { getWesternUnionEurArsRate } from "@/lib/westernunion-rate";
 
 export const dynamic = "force-dynamic";
@@ -36,21 +37,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const thresholdRaw = process.env.EUR_ARS_THRESHOLD?.trim();
-  if (!thresholdRaw) {
-    return NextResponse.json(
-      { error: "Missing environment variable EUR_ARS_THRESHOLD" },
-      { status: 500 },
-    );
-  }
-
-  const threshold = Number(thresholdRaw);
-  if (!Number.isFinite(threshold)) {
-    return NextResponse.json(
-      { error: "EUR_ARS_THRESHOLD must be a number" },
-      { status: 500 },
-    );
-  }
+  const threshold = EUR_ARS_THRESHOLD;
 
   let rate: number;
   let sendAmountEur: number;
