@@ -42,8 +42,13 @@ jobs:
           fi
           BASE="${CHECK_RATE_URL%/}"
           TARGET="${BASE}/api/check-rate"
+          # Bypass conforme à https://vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection/protection-bypass-automation
           if [ -n "${VERCEL_PROTECTION_BYPASS:-}" ]; then
-            TARGET="${TARGET}?x-vercel-protection-bypass=${VERCEL_PROTECTION_BYPASS}"
+            QUERY="$(python3 -c "import os,urllib.parse as u; t=os.environ.get('VERCEL_PROTECTION_BYPASS',''); print('x-vercel-set-bypass-cookie=true&x-vercel-protection-bypass='+u.quote(t,safe=''))")"
+            TARGET="${TARGET}?${QUERY}"
+            echo "Protection Vercel : bypass activé (secret VERCEL_PROTECTION_BYPASS)"
+          else
+            echo "::notice::Sans secret VERCEL_PROTECTION_BYPASS : la prod doit être accessible sans auth Vercel (voir README)."
           fi
           echo "GET ${BASE}/api/check-rate"
           HTTP_CODE=$(curl -sS -g -o resp.json -w "%{http_code}" \
@@ -53,5 +58,8 @@ jobs:
           cat resp.json
           echo ""
           if [ "$HTTP_CODE" -ge 400 ]; then
+            if [ "$HTTP_CODE" = "401" ] && grep -q "Authentication Required" resp.json 2>/dev/null; then
+              echo "::error::Vercel bloque encore l’accès (page « Authentication Required »). Soit tu désactives la protection sur le déploiement Production (Vercel → Projet → Settings → Deployment Protection), soit tu crées un « Protection Bypass » sur Vercel et tu ajoutes le même token en secret GitHub VERCEL_PROTECTION_BYPASS."
+            fi
             exit 1
           fi

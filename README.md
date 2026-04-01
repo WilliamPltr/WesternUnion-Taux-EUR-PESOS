@@ -63,11 +63,23 @@ Le workflow [`.github/workflows/wu-eur-ars-check.yml`](.github/workflows/wu-eur-
 
 ### Erreur HTTP 401 « Authentication Required » (Vercel)
 
-Si le log GitHub Actions affiche du HTML **Vercel Authentication** au lieu du JSON de l’API, ce n’est **pas** un problème de `CRON_SECRET` : **Vercel bloque l’URL** (protection des déploiements) avant d’atteindre Next.js.
+C’est **toujours** le même cas : **Vercel** affiche une page de connexion **avant** ton API. Ce n’est **pas** le `CRON_SECRET` de ton route handler.
 
-**Option A (recommandé)** — Rendre le site **public** pour la prod : Vercel → ton projet → **Settings → Deployment Protection** : désactive la protection SSO / mot de passe sur le **déploiement Production** (ou limite la protection aux *Preview* uniquement). L’API reste protégée par `Authorization: Bearer` côté route.
+#### Option A — Désactiver la protection sur la Production (le plus simple)
 
-**Option B** — Garder la protection : Vercel → **Deployment Protection** → crée un **[Protection Bypass Secret](https://vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection/protection-bypass-automation)** pour l’automatisation. Ajoute le **même** secret dans GitHub → Environnement `production` sous le nom **`VERCEL_PROTECTION_BYPASS`**. Le workflow [`.github/workflows/wu-eur-ars-check.yml`](.github/workflows/wu-eur-ars-check.yml) l’ajoute en query string (`x-vercel-protection-bypass=…`).
+1. [Vercel Dashboard](https://vercel.com) → sélectionne le **projet** (ex. `western-union-taux-eur-pesos`).
+2. **Settings** (en haut du projet) → **Deployment Protection** (menu de gauche).
+3. Repère **Vercel Authentication** / **Password Protection** / protection d’équipe sur les déploiements **Production**.
+4. **Désactive** la protection pour la **Production**, ou configure pour qu’elle ne s’applique qu’aux **Preview** (pas au domaine de prod `*.vercel.app` / ton domaine custom).
+
+Après enregistrement, ouvre dans un navigateur **navigation privée** : `https://ton-url.vercel.app/api/check-rate` — tu dois voir une erreur JSON (`Unauthorized` ou `Missing…`), **pas** une page « Authenticate with Vercel ».
+
+#### Option B — Garder la protection + jeton d’automatisation
+
+1. Toujours dans **Settings → Deployment Protection**, section **Protection Bypass for Automation** (ou équivalent), **génère un secret** de contournement.
+2. Sur GitHub → **Environments → production** → nouveau secret **`VERCEL_PROTECTION_BYPASS`** = **exactement** la même valeur que sur Vercel.
+
+Le workflow ajoute `?x-vercel-set-bypass-cookie=true&x-vercel-protection-bypass=…` (voir [doc Vercel](https://vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection/protection-bypass-automation)).
 
 ### Limites utiles à connaître
 
