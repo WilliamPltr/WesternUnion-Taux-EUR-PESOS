@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { EUR_ARS_THRESHOLD } from "@/lib/eur-ars-threshold";
 import { getWesternUnionEurArsRate } from "@/lib/westernunion-rate";
 
 export const dynamic = "force-dynamic";
@@ -36,20 +37,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const thresholdRaw = process.env.EUR_ARS_THRESHOLD?.trim();
-  if (!thresholdRaw) {
-    return NextResponse.json(
-      { error: "Missing EUR_ARS_THRESHOLD (définir dans .env.local ou Vercel)" },
-      { status: 500 },
-    );
-  }
-  const threshold = Number(thresholdRaw);
-  if (!Number.isFinite(threshold)) {
-    return NextResponse.json(
-      { error: "EUR_ARS_THRESHOLD doit être un nombre (ARS pour 1 EUR)" },
-      { status: 500 },
-    );
-  }
+  const threshold = EUR_ARS_THRESHOLD;
 
   let rate: number;
   let sendAmountEur: number;
