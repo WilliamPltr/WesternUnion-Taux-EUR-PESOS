@@ -61,6 +61,14 @@ Le workflow [`.github/workflows/wu-eur-ars-check.yml`](.github/workflows/wu-eur-
 
 3. **Activer Actions** — Onglet *Actions* : si besoin, accepter les workflows pour ce dépôt. Le premier run peut être lancé à la main : *Actions → Western Union EUR/ARS check → Run workflow*.
 
+### Erreur HTTP 401 « Authentication Required » (Vercel)
+
+Si le log GitHub Actions affiche du HTML **Vercel Authentication** au lieu du JSON de l’API, ce n’est **pas** un problème de `CRON_SECRET` : **Vercel bloque l’URL** (protection des déploiements) avant d’atteindre Next.js.
+
+**Option A (recommandé)** — Rendre le site **public** pour la prod : Vercel → ton projet → **Settings → Deployment Protection** : désactive la protection SSO / mot de passe sur le **déploiement Production** (ou limite la protection aux *Preview* uniquement). L’API reste protégée par `Authorization: Bearer` côté route.
+
+**Option B** — Garder la protection : Vercel → **Deployment Protection** → crée un **[Protection Bypass Secret](https://vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection/protection-bypass-automation)** pour l’automatisation. Ajoute le **même** secret dans GitHub → Environnement `production` sous le nom **`VERCEL_PROTECTION_BYPASS`**. Le workflow [`.github/workflows/wu-eur-ars-check.yml`](.github/workflows/wu-eur-ars-check.yml) l’ajoute en query string (`x-vercel-protection-bypass=…`).
+
 ### Limites utiles à connaître
 
 - Les **crons GitHub** sont en **UTC** ; « toutes les 5 minutes » est le minimum courant pour `schedule`.

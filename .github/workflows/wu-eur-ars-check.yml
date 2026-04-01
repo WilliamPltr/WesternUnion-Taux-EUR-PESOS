@@ -27,6 +27,9 @@ jobs:
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           CHECK_RATE_URL: ${{ vars.CHECK_RATE_URL }}
+          # Optionnel : si « Deployment Protection » est activé sur Vercel (page « Authentication Required »),
+          # crée un Protection Bypass Secret sur Vercel et le même secret ici (nom : VERCEL_PROTECTION_BYPASS).
+          VERCEL_PROTECTION_BYPASS: ${{ secrets.VERCEL_PROTECTION_BYPASS }}
         run: |
           set -euo pipefail
           if [ -z "${CHECK_RATE_URL:-}" ]; then
@@ -38,10 +41,14 @@ jobs:
             exit 1
           fi
           BASE="${CHECK_RATE_URL%/}"
-          echo "Requête vers ${BASE}/api/check-rate"
-          HTTP_CODE=$(curl -sS -o resp.json -w "%{http_code}" \
+          TARGET="${BASE}/api/check-rate"
+          if [ -n "${VERCEL_PROTECTION_BYPASS:-}" ]; then
+            TARGET="${TARGET}?x-vercel-protection-bypass=${VERCEL_PROTECTION_BYPASS}"
+          fi
+          echo "GET ${BASE}/api/check-rate"
+          HTTP_CODE=$(curl -sS -g -o resp.json -w "%{http_code}" \
             -H "Authorization: Bearer ${CRON_SECRET}" \
-            "${BASE}/api/check-rate")
+            "${TARGET}")
           echo "HTTP ${HTTP_CODE}"
           cat resp.json
           echo ""
