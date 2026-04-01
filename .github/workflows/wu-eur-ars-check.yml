@@ -19,6 +19,9 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # Utilise les secrets / variables de l’environnement GitHub « production »
+    # (Settings → Environments → production).
+    environment: production
     steps:
       - name: GET /api/check-rate
         env:
@@ -27,7 +30,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${CHECK_RATE_URL:-}" ]; then
-            echo "::error::Ajoute la variable CHECK_RATE_URL (Settings → Secrets and variables → Actions → Variables)"
+            echo "::error::Ajoute la variable CHECK_RATE_URL dans l’environnement « production » (ou au niveau repo)"
             exit 1
           fi
           if [ -z "${CRON_SECRET:-}" ]; then

@@ -54,9 +54,10 @@ Le workflow [`.github/workflows/wu-eur-ars-check.yml`](.github/workflows/wu-eur-
 
 1. **Vercel** — Projet lié à ce dépôt, déploiement OK. Dans *Settings → Environment Variables* (Production), définir au minimum : `CRON_SECRET`, `RESEND_API_KEY`, `RESEND_FROM`, `ALERT_EMAIL` (mêmes idées que ton `.env.local`). Repère l’URL du site, ex. `https://ton-projet.vercel.app` ou ton domaine custom.
 
-2. **GitHub** — Ouvre le dépôt → *Settings → Secrets and variables → Actions* :
+2. **GitHub** — *Settings → Environments* → environnement **`production`** (le workflow l’utilise) :
    - **Secret** `CRON_SECRET` : **exactement la même valeur** que sur Vercel (sinon `401`).
-   - **Variable** `CHECK_RATE_URL` : l’URL de base **sans** `/api/...`, ex. `https://ton-projet.vercel.app` (pas de `/` final obligatoire).
+   - **Variable** `CHECK_RATE_URL` : URL de base **sans** `/api/...`, ex. `https://ton-projet.vercel.app`.
+
 
 3. **Activer Actions** — Onglet *Actions* : si besoin, accepter les workflows pour ce dépôt. Le premier run peut être lancé à la main : *Actions → Western Union EUR/ARS check → Run workflow*.
 
